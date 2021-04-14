@@ -24,7 +24,7 @@ const $ = new Env('京东赚赚');
 const notify = $.isNode() ? require('./sendNotify') : '';
 //Node.js用户请在jdCookie.js处填写京东ck;
 const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
-let helpAuthor = false; // 帮助作者
+let helpAuthor=false; // 帮助作者
 const randomCount = $.isNode() ? 0 : 0;
 let jdNotify = true; // 是否关闭通知，false打开通知推送，true关闭通知推送
 //IOS等用户直接用NobyDa的jd cookie
@@ -40,17 +40,16 @@ if ($.isNode()) {
 }
 const JD_API_HOST = 'https://api.m.jd.com/client.action';
 const inviteCodes = [
-  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI`,
-  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI`,
-  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI`,
-  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI`
+  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI@S5KkcAX5ZqwK_U36R6aNb`,
+  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI@S5KkcAX5ZqwK_U36R6aNb`,
+  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI@S5KkcAX5ZqwK_U36R6aNb`,
+  `S5KkcRRcRowHfdEnwwKNYJg@Sv_16QRwc8lbQPRn3kPMNdA@SaVT-lrmMI8ZBIxI@S5KkcAX5ZqwK_U36R6aNb`,
 ]
 let nowTimes = new Date(new Date().getTime() + new Date().getTimezoneOffset() * 60 * 1000 + 8 * 60 * 60 * 1000);
 !(async () => {
   $.tuanList = []
   await requireConfig();
-  if (helpAuthor) await getAuthorShareCode('https://gitee.com/shylocks/updateTeam/raw/main/jd_zz.json');
-  if (helpAuthor) await getAuthorShareCode('https://gitee.com/lxk0301/updateTeam/raw/master/shareCodes/jd_zz.json');
+  if (helpAuthor) await getAuthorShareCode('https://gitee.com/Soundantony/updateTeam/raw/master/shareCodes/jd_zz.json');
   if (!cookiesArr[0]) {
     $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/bean/signIndex.action', {"open-url": "https://bean.m.jd.com/bean/signIndex.action"});
     return;
@@ -83,13 +82,27 @@ let nowTimes = new Date(new Date().getTime() + new Date().getTimezoneOffset() * 
       await notify.sendNotify($.name, allMessage);
     }
   }
+  console.log(`\n\n开始账号内部互助 【赚京豆(微信小程序)-瓜分京豆】活动(优先内部账号互助(需内部cookie数量大于${$.assistNum || 4}个)，如有剩余助力次数则给作者lxk0301助力)\n`)
   for (let i = 0; i < cookiesArr.length; i++) {
     $.canHelp = true
     if (cookiesArr[i]) {
       cookie = cookiesArr[i];
-      for (let j = 0; j < $.tuanList.length; ++j) {
-        await helpFriendTuan($.tuanList[j])
-        if(!$.canHelp) break
+      $.UserName = decodeURIComponent(cookie.match(/pt_pin=([^; ]+)(?=;?)/) && cookie.match(/pt_pin=([^; ]+)(?=;?)/)[1])
+      if ($.canHelp && cookiesArr.length > $.assistNum || 4) {
+        console.log(`开始账号内部互助 赚京豆-瓜分京豆 活动，优先内部账号互助`)
+        for (let j = 0; j < $.tuanList.length; ++j) {
+          console.log(`账号 ${$.UserName} 开始给 【${$.tuanList[j]['assistedPinEncrypted']}】助力`)
+          await helpFriendTuan($.tuanList[j])
+          if(!$.canHelp) break
+        }
+      }
+      if ($.canHelp) {
+        console.log(`开始账号内部互助 赚京豆-瓜分京豆 活动，如有剩余则给作者lxk0301助力`)
+        for (let j = 0; j < $.authorTuanList.length; ++j) {
+          console.log(`账号 ${$.UserName} 开始给作者lxk0301 ${$.authorTuanList[j]['assistedPinEncrypted']}助力`)
+          await helpFriendTuan($.authorTuanList[j])
+          if(!$.canHelp) break
+        }
       }
     }
   }
@@ -104,14 +117,15 @@ let nowTimes = new Date(new Date().getTime() + new Date().getTimezoneOffset() * 
 async function jdWish() {
   $.bean = 0
   $.tuan = null
-  $.hasOpen = false
+  $.hasOpen = false;
+  $.assistStatus = 0;
   await getTaskList(true)
   await getUserTuanInfo()
-  if (!$.tuan) {
+  if (!$.tuan && $.assistStatus === 3 && $.canStartNewAssist) {
     await openTuan()
     if ($.hasOpen) await getUserTuanInfo()
   }
-  if ($.tuan) $.tuanList.push($.tuan)
+  if ($.tuan && $.assistStatus !== 3) $.tuanList.push($.tuan)
 
   await helpFriends()
   await getUserInfo()
@@ -140,6 +154,7 @@ function showMsg() {
     message += `本次获得${parseInt($.totalBeanNum) - $.nowBean}京豆，${parseInt($.totalNum) - $.nowNum}金币\n`
     message += `累计获得${$.totalBeanNum}京豆，${$.totalNum}金币\n可兑换${$.totalNum / 10000}元无门槛红包\n兑换入口:京东赚赚微信小程序->赚好礼->金币提现`
     if (parseInt($.totalBeanNum) - $.nowBean > 0) {
+      //IOS运行获得京豆大于0通知
       $.msg($.name, '', `京东账号${$.index} ${$.nickName}\n${message}`);
     } else {
       $.log(message)
@@ -152,14 +167,28 @@ function showMsg() {
 }
 function getAuthorShareCode(url) {
   return new Promise(resolve => {
-    $.get({url: `${url}?${new Date()}`,
-      headers:{
+    const options = {
+      url: `${url}?${new Date()}`, "timeout": 10000, headers: {
         "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/87.0.4280.88"
-      }}, async (err, resp, data) => {
+      }
+    };
+    if ($.isNode() && process.env.TG_PROXY_HOST && process.env.TG_PROXY_PORT) {
+      const tunnel = require("tunnel");
+      const agent = {
+        https: tunnel.httpsOverHttp({
+          proxy: {
+            host: process.env.TG_PROXY_HOST,
+            port: process.env.TG_PROXY_PORT * 1
+          }
+        })
+      }
+      Object.assign(options, { agent })
+    }
+    $.get(options, async (err, resp, data) => {
       try {
         if (err) {
         } else {
-          $.tuanList = $.tuanList.concat(JSON.parse(data))
+          $.authorTuanList = $.authorTuanList.concat(JSON.parse(data))
           console.log(`作者助力码获取成功`)
         }
       } catch (e) {
@@ -181,13 +210,13 @@ function helpFriendTuan(body) {
           if (safeGet(data)) {
             data = JSON.parse(data);
             if (data.success) {
-              console.log('助力成功')
+              console.log('助力结果：助力成功\n')
             } else {
-              if (data.resultCode === '9200008') console.log('不能助力自己')
-              else if (data.resultCode === '9200011') console.log('已经助力过')
-              else if (data.resultCode === '2400205') console.log('团已满')
-              else if (data.resultCode === '2400203') {console.log('助力次数已耗尽');$.canHelp = false}
-              else console.log(`未知错误`)
+              if (data.resultCode === '9200008') console.log('助力结果：不能助力自己\n')
+              else if (data.resultCode === '9200011') console.log('助力结果：已经助力过\n')
+              else if (data.resultCode === '2400205') console.log('助力结果：团已满\n')
+              else if (data.resultCode === '2400203') {console.log('助力结果：助力次数已耗尽\n');$.canHelp = false}
+              else console.log(`助力结果：未知错误\n`)
             }
           }
         }
@@ -211,14 +240,23 @@ function getUserTuanInfo() {
         } else {
           if (safeGet(data)) {
             data = JSON.parse(data);
-            if (data.data && !data.data.canStartNewAssist) {
-              $.tuan = {
-                "activityIdEncrypted": data.data.id,
-                "assistStartRecordId": data.data.assistStartRecordId,
-                "assistedPinEncrypted": data.data.encPin,
-                "channel": "FISSION_BEAN"
+            if (data['success']) {
+              $.log(`\n\n【赚京豆(微信小程序)-瓜分京豆】能否再次开团: ${data.data.canStartNewAssist ? '可以' : '否'}\n\n`)
+              if (data.data && !data.data.canStartNewAssist) {
+                $.tuan = {
+                  "activityIdEncrypted": data.data.id,
+                  "assistStartRecordId": data.data.assistStartRecordId,
+                  "assistedPinEncrypted": data.data.encPin,
+                  "channel": "FISSION_BEAN"
+                }
               }
-              $.tuanActId = data.data.id
+              $.tuanActId = data.data.id;
+              $.assistNum = data['data']['assistNum'] || 4;
+              $.assistStatus = data['data']['assistStatus'];
+              $.canStartNewAssist = data['data']['canStartNewAssist'];
+            } else {
+              $.tuan = true;//活动火爆
+              console.log(`获取【赚京豆(微信小程序)-瓜分京豆】活动信息失败 ${JSON.stringify(data)}\n`)
             }
           }
         }
@@ -243,7 +281,10 @@ function openTuan() {
           if (safeGet(data)) {
             data = JSON.parse(data);
             if (data['success']) {
+              console.log(`【赚京豆(微信小程序)-瓜分京豆】开团成功`)
               $.hasOpen = true
+            } else {
+              console.log(`\n开团失败：${JSON.stringify(data)}\n`)
             }
           }
         }
@@ -267,7 +308,7 @@ function getUserInfo() {
           if (safeGet(data)) {
             data = JSON.parse(data);
             // if (data.data.shareTaskRes) {
-            //   console.log(`\n【京东账号${$.index}（${$.UserName}）的${$.name}好友互助码】${data.data.shareTaskRes.itemId}\n`);
+            //   console.log(`\n【京东账号${$.index}（${$.nickName || $.UserName}）的${$.name}好友互助码】${data.data.shareTaskRes.itemId}\n`);
             // } else {
             //   console.log(`\n\n已满5人助力或助力功能已下线,故暂时无${$.name}好友助力码\n\n`)
             // }
@@ -352,14 +393,16 @@ async function helpFriends() {
 function readShareCode() {
   console.log(`开始`)
   return new Promise(async resolve => {
-    $.get({url: `https://code.chiang.fun/api/v1/jd/jdzz/read/${randomCount}/`, 'timeout': 10000}, (err, resp, data) => {
+    $.get({url: "https://gitee.com/Soundantony/RandomShareCode/raw/master/JD_Jdzz.json",headers:{
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/87.0.4280.88"
+      }}, async (err, resp, data) => {
       try {
         if (err) {
           console.log(`${JSON.stringify(err)}`)
           console.log(`${$.name} API请求失败，请检查网路重试`)
         } else {
           if (data) {
-            console.log(`随机取${randomCount}个码放到您固定的互助码后面(不影响已有固定互助)`)
+            console.log(`随机取助力码放到您固定的互助码后面(不影响已有固定互助)`)
             data = JSON.parse(data);
           }
         }
