@@ -20,13 +20,15 @@ const selfDomain = 'https://try.m.jd.com'
 let allGoodList = []
 
 // default params
-let jdNotify = false
-$.pageSize = 12
-let cidsList = ["家用电器", "手机数码", "电脑办公", "家居家装"]
-let typeList = ["普通试用", "闪电试用"]
-let goodFilters = "教程@软件@英语@辅导@花盆@车@电信@移动@联通@培训@靓美@脚气@文胸@卷尺@看房@鞋带@益生菌@丰胸@课程培训@体验班@精品课@红参@益生元@御夫王@苗霸@北海游@购房@键盘膜@情趣内衣@种子@三元催化@男用喷剂@玉石@万向轮@档案袋@癣@中年@玉坠@老太太@妇女@私处@孕妇@卫生巾@卫生条@课@培训@阴道@生殖器@肛门@狐臭@少女内衣@胸罩@洋娃娃@男孩玩具@女孩玩具@益智@少女@女性内衣@女性内裤@女内裤@女内衣@女孩@鱼饵@钓鱼@童装@吊带@黑丝@钢圈@婴儿@儿童@玩具@幼儿@娃娃@网课@网校@电商@手机壳@钢化膜@车载充电器@网络课程@疣@避孕套@女纯棉@按键贴@背膜@后膜@背贴@贝尔思力@卡薇尔@三角裤@痔疮@神皂@美少女@纸尿裤@英语@俄语@四级@六级@四六级@在线网络@在线@阴道炎@宫颈@螺丝@延时@糜烂@和田玉@白玉@打底裤@手机膜@早早孕@延时喷剂@鱼@增长@增时@壮阳@女用@男用@狗@艾草@灸@贴@膏@药北海@印度@油@在线@膜".split('@')
-let minPrice = 60
-let maxPrice = 2500
+const args = {
+	jdNotify: false,
+	pageSize: 12,
+	cidsList: ["家用电器", "手机数码", "电脑办公", "家居家装"],
+	typeList: ["普通试用", "闪电试用"],
+	goodFilters = "教程@软件@英语@辅导@花盆@车@电信@移动@联通@培训@靓美@脚气@胸@卷尺@房@鞋带@益生菌@丰胸@课程培训@班@精品课@红参@益生元@御夫王@苗霸@北海游@购房@键盘膜@情趣内衣@种子@三元催化@男用喷剂@玉石@万向轮@档案袋@癣@中年@玉坠@老太太@妇女@私处@孕妇@卫生巾@卫生条@课@培训@阴道@生殖器@肛门@狐臭@少女内衣@胸罩@洋娃娃@男孩玩具@女孩玩具@益智@少女@女性内衣@女性内裤@女内裤@女内衣@女孩@鱼饵@钓鱼@童装@吊带@黑丝@钢圈@婴儿@儿童@玩具@幼儿@娃娃@网课@网校@电商@手机壳@钢化膜@车载充电器@网络课程@疣@避孕套@女纯棉@按键贴@背膜@后膜@背贴@贝尔思力@卡薇尔@三角裤@痔疮@神皂@美少女@纸尿裤@英语@俄语@四级@六级@四六级@在线网络@在线@阴道炎@宫颈@螺丝@延时@糜烂@和田玉@白玉@打底裤@手机膜@早早孕@延时喷剂@鱼@增长@增时@壮阳@女用@男用@狗@艾草@灸@贴@膏@药@北海@印度@油@在线@膜".split('@')
+	minPrice: 70,
+	maxSupplyCount: 5,
+}
 
 const cidsMap = {
 	"全部商品": "0",
@@ -79,7 +81,7 @@ const typeMap = {
 
 				$.goodList = []
 				$.successList = []
-				if (allGoodList.length == 0) {
+				if (i == 0) {
 					await getGoodList()
 				}
 				await filterGoodList()
@@ -100,7 +102,7 @@ const typeMap = {
 function requireConfig() {
 	return new Promise(resolve => {
 		console.log('开始获取配置文件\n')
-		$.notify = $.isNode() ? require('./sendNotify') : async () => {}
+		$.notify = $.isNode() ? require('./sendNotify') : {sendNotify:async () => {}}
 
 		//获取 Cookies
 		$.cookiesArr = []
@@ -115,29 +117,32 @@ function requireConfig() {
 			if (process.env.JD_DEBUG && process.env.JD_DEBUG === 'false') console.log = () => {};
 		} else {
 			//IOS等用户直接用NobyDa的jd $.cookie
-			$.cookiesArr = [$.getdata('CookieJD'), $.getdata('CookieJD2'), ...jsonParse($.getdata('CookiesJD') || "[]").map(item => item.$.cookie)].filter(item => !!item);
+			$.cookiesArr = [$.getdata('CookieJD'), $.getdata('CookieJD2'), ...jsonParse($.getdata('CookiesJD') || "[]").map(item => item.cookie)].filter(item => !!item);
 		}
 		console.log(`共${$.cookiesArr.length}个京东账号\n`)
 
 		if ($.isNode()) {
 			if (process.env.JD_TRY_CIDS_KEYS) {
-				cidsList = process.env.JD_TRY_CIDS_KEYS.split('@').filter(key => {
+				args.cidsList = process.env.JD_TRY_CIDS_KEYS.split('@').filter(key => {
 					return Object.keys(cidsMap).includes(key)
 				})
 			}
 			if (process.env.JD_TRY_TYPE_KEYS) {
-				typeList = process.env.JD_TRY_CIDS_KEYS.split('@').filter(key => {
+				args.typeList = process.env.JD_TRY_CIDS_KEYS.split('@').filter(key => {
 					return Object.keys(typeMap).includes(key)
 				})
 			}
 			if (process.env.JD_TRY_GOOD_FILTERS) {
-				goodFilters = process.env.JD_TRY_GOOD_FILTERS.split('@')
+				args.goodFilters = process.env.JD_TRY_GOOD_FILTERS.split('@')
 			}
 			if (process.env.JD_TRY_MIN_PRICE) {
-				minPrice = process.env.JD_TRY_MIN_PRICE * 1
+				args.minPrice = process.env.JD_TRY_MIN_PRICE * 1
 			}
 			if (process.env.JD_TRY_PAGE_SIZE) {
-				$.pageSize = process.env.JD_TRY_PAGE_SIZE * 1
+				args.pageSize = process.env.JD_TRY_PAGE_SIZE * 1
+			}
+			if (process.env.JD_TRY_MAX_SUPPLY_COUNT) {
+				args.maxSupplyCount = process.env.JD_TRY_MAX_SUPPLY_COUNT * 1
 			}
 		} else {
 			let qxCidsList = []
@@ -152,19 +157,19 @@ function requireConfig() {
 				const open = $.getdata(key)
 				if (open == 'true') qxTypeList.push(key)
 			}
-			if (qxCidsList.length != 0) cidsList = qxCidsList
-			if (qxTypeList.length != 0) typeList = qxTypeList
-			if ($.getdata('filter')) goodFilters = $.getdata('filter').split('&')
-			if ($.getdata('min_price')) minPrice = Number($.getdata('min_price'))
-			if ($.getdata('page_size')) $.pageSize = Number($.getdata('page_size'))
-			if ($.pageSize == 0) $.pageSize = 12
+			if (qxCidsList.length != 0) args.cidsList = qxCidsList
+			if (qxTypeList.length != 0) args.typeList = qxTypeList
+			if ($.getdata('filter')) args.goodFilters = $.getdata('filter').split('&')
+			if ($.getdata('min_price')) args.minPrice = Number($.getdata('min_price'))
+			if ($.getdata('page_size')) args.pageSize = Number($.getdata('page_size'))
+			if ($.getdata('max_supply_count')) args.maxSupplyCount = Number($.getdata('max_supply_count'))
+			if (args.pageSize == 0) args.pageSize = 12
 		}
 		resolve()
 	})
 }
 
 function getGoodListByCond(cids, page, pageSize, type, state) {
-
 	return new Promise((resolve, reject) => {
 		let option = taskurl(`${selfDomain}/activity/list?pb=1&cids=${cids}&page=${page}&pageSize=${pageSize}&type=${type}&state=${state}`)
 		delete option.headers['Cookie']
@@ -191,15 +196,15 @@ function getGoodListByCond(cids, page, pageSize, type, state) {
 }
 
 async function getGoodList() {
-	if (cidsList.length === 0) cidsList.push("全部商品")
-	if (typeList.length === 0) typeList.push("全部试用")
-	for (let cidsKey of cidsList) {
-		for (let typeKey of typeList) {
+	if (args.cidsList.length === 0) args.cidsList.push("全部商品")
+	if (args.typeList.length === 0) args.typeList.push("全部试用")
+	for (let cidsKey of args.cidsList) {
+		for (let typeKey of args.typeList) {
 			if (!cidsMap.hasOwnProperty(cidsKey) || !typeMap.hasOwnProperty(typeKey)) continue
 			console.log(`⏰ 获取 ${cidsKey} ${typeKey} 商品列表`)
 			$.totalPages = 1
 			for (let page = 1; page <= $.totalPages; page++) {
-				await getGoodListByCond(cidsMap[cidsKey], page, $.pageSize, typeMap[typeKey], '0')
+				await getGoodListByCond(cidsMap[cidsKey], page, args.pageSize, typeMap[typeKey], '0')
 			}
 		}
 	}
@@ -214,11 +219,15 @@ async function filterGoodList() {
 		// 2. good 距离结束不到10min
 		// 3. good 的结束时间大于一天
 		// 4. good 的价格小于最小的限制
-		if (!good || good.endTime < now + 10 * 60 * 1000 || good.endTime > oneMoreDay || good.jdPrice < minPrice) {
+		// 5. good 的试用数量大于 maxSupplyCount, 视为垃圾商品
+		if (!good || good.endTime < now + 10 * 60 * 1000 || good.endTime > oneMoreDay || good.jdPrice < args.minPrice) {
 			return false
 		}
-		for (let item of goodFilters) {
+		for (let item of args.goodFilters) {
 			if (good.trialName.indexOf(item) != -1) return false
+		}
+		if(good.supplyCount > args.maxSupplyCount){
+			return false
 		}
 		return true
 
@@ -261,7 +270,7 @@ async function getApplyStateByActivityIds() {
 	let list = []
 	for (let good of $.goodList) {
 		list.push(good.id)
-		if (list.length == $.pageSize) {
+		if (list.length == args.pageSize) {
 			await opt(list)
 			list.length = 0
 		}
@@ -418,7 +427,7 @@ async function getSuccessList() {
 
 async function showMsg() {
 	let message = `京东账号${$.index} ${$.nickName || $.UserName}\n🎉 本次申请：${$.totalTry}/${$.totalGoods}个商品🛒\n🎉 ${$.successList.length}个商品待领取🤩\n🎉 结束原因：${$.stopMsg}`
-	if (!jdNotify || jdNotify === 'false') {
+	if (!args.jdNotify || args.jdNotify === 'false') {
 		$.msg($.name, ``, message, {
 			"open-url": 'https://try.m.jd.com/user'
 		})
