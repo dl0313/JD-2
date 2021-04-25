@@ -1,23 +1,23 @@
 // author：疯疯
 /*
 球队赢好礼
-默认：加购物车，开会员卡。
+默认：不加购物车，不注册店铺会员卡。
 活动地址：https://mpdz-isv.isvjcloud.com/ql/front/tcl002/loadTclAct?id=tclTeamAct002&user_id=10299171
 已支持IOS双京东账号,Node.js支持N个京东账号
 脚本兼容: QuantumultX, Surge, Loon, JSBox, Node.js
 ============QuantumultX==============
 [task_local]
 #球队赢好礼
-10 16 * * * https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js, tag=球队赢好礼, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jdyjd.png, enabled=true
+10 1 * * * https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js, tag=球队赢好礼, img-url=https://raw.githubusercontent.com/58xinian/icon/master/jdyjd.png, enabled=true
 =================Loon===============
 [Script]
-cron "10 16 * * *" script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js,tag=球队赢好礼
+cron "10 1 * * *" script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js,tag=球队赢好礼
 =================Surge==============
 [Script]
-球队赢好礼 = type=cron,cronexp="10 16 * * *",wake-system=1,timeout=3600,script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js
+球队赢好礼 = type=cron,cronexp="10 1 * * *",wake-system=1,timeout=3600,script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js
 
 ============小火箭=========
-球队赢好礼 = type=cron,script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js, cronexpr="10 16 * * *", timeout=3600, enable=true
+球队赢好礼 = type=cron,script-path=https://gitee.com/lxk0301/jd_scripts/raw/master/jd_tcl.js, cronexpr="10 1 * * *", timeout=3600, enable=true
 */
 
 const $ = new Env("球队赢好礼");
@@ -27,13 +27,13 @@ const sck = $.isNode() ? "set-cookie" : "Set-Cookie";
 let cookiesArr = [],
   cookie = "",
   message;
-let shareUUID= [
-  '095124AA8E56BECE7503B544108C1545677188410354B0B8CF68BA5434EDC2AA49336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
-  '1CB1323FF0D3D2DA101B240477E86F622502EF7C027A70F061A42DC5A2BA842049336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
-  '095124AA8E56BECE7503B544108C1545677188410354B0B8CF68BA5434EDC2AA49336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
-  '1CB1323FF0D3D2DA101B240477E86F622502EF7C027A70F061A42DC5A2BA842049336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689'
-]
-let isPurchaseShops = true
+  let shareUUID= [
+    '1CB1323FF0D3D2DA101B240477E86F622502EF7C027A70F061A42DC5A2BA842049336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
+    '095124AA8E56BECE7503B544108C1545677188410354B0B8CF68BA5434EDC2AA49336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
+    '1CB1323FF0D3D2DA101B240477E86F622502EF7C027A70F061A42DC5A2BA842049336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689',
+    '095124AA8E56BECE7503B544108C1545677188410354B0B8CF68BA5434EDC2AA49336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689'
+  ]
+let isPurchaseShops = false
 isPurchaseShops = $.isNode() ? (process.env.PURCHASE_SHOPS ? process.env.PURCHASE_SHOPS : isPurchaseShops) : ($.getdata("isPurchaseShops") ? $.getdata("isPurchaseShops") : isPurchaseShops);
 
 if ($.isNode()) {
@@ -74,6 +74,7 @@ const JD_API_HOST = "https://api.m.jd.com/client.action";
       await main()
     }
   }
+  if ($.isNode()) await notify.sendNotify(`${$.name}`, `${message}\n\n如需做注册店铺会员任务，请点击下方链接手动完成\nhttps%3A%2F%2Fmpdz-isv.isvjcloud.com%2Fql%2Ffront%2Ftcl002%2FloadTclAct%3Fid%3DtclTeamAct002%26user_id%3D10299171\n\nhttps://mpdz-isv.isvjcloud.com/ql/front/tcl002/loadTclAct?id=tclTeamAct002&user_id=10299171`);
 })()
   .catch((e) => {
     $.log("", `❌ ${$.name}, 失败! 原因: ${e}!`, "");
@@ -90,7 +91,7 @@ function showMsg() {
 }
 async function main() {
   await loadAct()
-  await helpFriend(shareUUID[Math.floor(Math.random() * 1)])
+  await helpFriend(shareUUID[Math.floor(Math.random() * 2)])
   await sign()
   await $.wait(1000)
   await getShopList()
@@ -102,7 +103,7 @@ async function main() {
   await draw()
 }
 
-function helpFriend(inviterNickAes = '095124AA8E56BECE7503B544108C1545677188410354B0B8CF68BA5434EDC2AA49336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689') {
+function helpFriend(inviterNickAes = '1CB1323FF0D3D2DA101B240477E86F622502EF7C027A70F061A42DC5A2BA842049336DE54E26AA8F2834B248E6398CB7A755DF4FDAE585EC3E1ABE26F3DD3CFFC956D12974FF00A045D8E31A84FE84C18A8357DE96A1F617B8AC4D64BC24B689') {
   return new Promise((resolve) => {
     $.post(taskUrl('/ql/front/tcl002/helpFriend', `inviterNickAes=${inviterNickAes}`), async (err, resp, data) => {
       try {
@@ -132,7 +133,7 @@ function loadAct() {
         } else {
           //console.log(data)
           let id = data.match(/<input type="hidden" id="buyer_nick_code" name="buyer_nick_code" value="(.*)">/)
-          console.log('好友助力码' + id[1])
+          //console.log('好友助力码' + id[1])
           if (data.indexOf('<div class="yourChoice">') === -1) {
             console.log(`未选择球队，去选择`)
             await chooseTeam()
